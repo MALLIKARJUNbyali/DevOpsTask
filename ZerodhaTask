@@ -1,0 +1,88 @@
+ Task
+======
+
+1)Create a `Dockerfile` for the app.
+
+FROM node:12.2.0-alpine
+WORKDIR /app
+ENV PATH /app/node_modules/.bin:$PATH
+COPY package.json /app/package.json
+RUN apk add --no-cache bash coreutils grep sed
+RUN yarn install
+CMD ["npm", "start"]
+EXPOSE 3000
+
+
+2)
+version: '3.1'
+services:
+  redis:
+    image: "redis:alpine"
+    volumes:
+    - ./data:/data/
+    ports: 
+	- 8000:8000
+
+
+
+3)
+sudo apt-get install virtualbox -y
+sudo apt-get install vagrant -y
+vagrant init hashicorp/precise32
+vagrant up
+
+
+
+
+4)
+---
+- name: Rename virtual machine from old name to new name using UUID
+  gather_facts: no
+  hosts: localhost
+  tasks:
+    - set_fact:
+        vm_name: "oldVm_name"
+        newVm_name: "newVm_name"
+    - name: Create user 
+      user:
+      name: demo
+    - name: Set sysctl File Limits
+      copy:
+        src: 50-fs.conf
+        dest: /etc/sysctl.d
+    - name: Set Shell File Limits
+      copy:
+        src: 91-nofiles.conf
+        dest: /etc/security/limits.d
+     - name: Set timezone to Asia/Kolkata
+          timezone:
+          name: Asia/Kolkata
+      - name: ensure repository key is installed
+        apt_key:
+             id: "58118E89F3A912897C070ADBF76221572C52609D"
+             keyserver: "hkp://p80.pool.sks-keyservers.net:80"
+             state: present
+      - name: ensure docker registry is available
+        apt_repository: repo='deb https://apt.dockerproject.org/repo ubuntu-xenial main' state=present
+      - name: ensure docker and dependencies are installed
+        apt: name=docker-engine update_cache=yes
+      - name: ensure docker can use insecure registries in 10.11.0.0/16
+        lineinfile: "dest=/etc/default/docker regexp=^DOCKER_OPTS line=DOCKER_OPTS='--insecure-registry 10.11.0.0/16'"
+      - service: name=docker state=restarted
+      - name: Install docker-compose
+       get_url: 
+         url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-x86_64
+         dest: /usr/local/bin/docker-compose
+      - name: Start a container with a command
+        docker_container:
+        name: sleepy
+        image: ubuntu:16.04
+        command: ["sleep", "infinity"]
+      - name: copying file
+          copy:
+	    src: /docker-compose.yml
+	    dest:/etc/demo-ops/
+      - name: docker-compose.yml
+        docker_compose:
+           project_src: /etc/demo-ops/
+
